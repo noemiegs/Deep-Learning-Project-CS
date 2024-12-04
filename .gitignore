@@ -1,0 +1,54 @@
+# Ignorer les fichiers de configuration locaux
+*.env
+*.local
+
+# Ignorer les fichiers de compilation Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Ignorer les fichiers de logs
+logs/
+*.log
+*.out
+*.err
+
+# Ignorer les résultats intermédiaires ou temporaires
+temp/
+*.tmp
+*.cache
+
+# Ignorer les checkpoints et modèles entraînés
+checkpoints/
+models/
+*.h5
+*.pth
+*.ckpt
+
+# Ignorer les fichiers de données brutes et sorties intermédiaires
+data/raw/
+data/interim/
+data/output/
+
+# Ignorer les notebooks convertis
+*.ipynb_checkpoints
+
+# Ignorer les fichiers spécifiques à l'OS
+.DS_Store
+Thumbs.db
+
+# Ignorer les fichiers spécifiques à des IDEs ou éditeurs de texte
+.vscode/
+.idea/
+*.iml
+
+# Ignorer les archives et fichiers compressés
+*.zip
+*.tar.gz
+*.rar
+
+# Ignorer les fichiers spécifiques aux soumissions
+submission.csv
+
+# Ignorer les fichiers d'évaluation temporaire
+evaluation_output/
