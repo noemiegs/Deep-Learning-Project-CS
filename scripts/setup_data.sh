@@ -38,7 +38,7 @@ fi
 
 # Create the project directories if they don't exist
 echo "Creating project directories under $PROJECT_ROOT..."
-mkdir -p "$RAW_DATA_DIR" "$PROCESSED_DATA_DIR" "$PROCESSED_DATA_DIR" "$SUBMISSIONS_DIR"
+mkdir -p "$RAW_DATA_DIR" "$PROCESSED_DATA_DIR" "$SUBMISSIONS_DIR"
 
 # Download data from Kaggle
 ZIP_FILE="$RAW_DATA_DIR/$COMPETITION_NAME.zip"
@@ -52,9 +52,7 @@ unzip -q "$ZIP_FILE" -d "$RAW_DATA_DIR"
 # Organize files into their respective directories
 echo "Organizing files..."
 if [[ -d "$RAW_DATA_DIR/train" && -d "$RAW_DATA_DIR/test" && -f "$RAW_DATA_DIR/sample_submission.csv" ]]; then
-    echo "Moving files to their respective locations..."
-    mv "$RAW_DATA_DIR/train" "$PROCESSED_DATA_DIR/train"
-    mv "$RAW_DATA_DIR/test" "$PROCESSED_DATA_DIR/test"
+    echo "Moving sample submission to its directory..."
     mv "$RAW_DATA_DIR/sample_submission.csv" "$SUBMISSIONS_DIR/sample_submission.csv"
 else
     echo "Error: Unexpected structure in the zip file. Please check its contents."

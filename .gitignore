@@ -56,3 +56,5 @@ evaluation_output/
 # Ignore certain folders/files
 data
 submissions
+.venv
+test*
