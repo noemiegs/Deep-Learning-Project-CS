@@ -12,7 +12,6 @@ COMPETITION_NAME="czii-cryo-et-object-identification"
 # Define paths within the project structure
 RAW_DATA_DIR="$PROJECT_ROOT/data/raw"
 PROCESSED_DATA_DIR="$PROJECT_ROOT/data/processed"
-INTERIM_DATA_DIR="$PROJECT_ROOT/data/interim"
 SUBMISSIONS_DIR="$PROJECT_ROOT/submissions"
 
 # Check if Kaggle CLI is installed
@@ -39,10 +38,10 @@ fi
 
 # Create the project directories if they don't exist
 echo "Creating project directories under $PROJECT_ROOT..."
-mkdir -p "$RAW_DATA_DIR" "$PROCESSED_DATA_DIR" "$INTERIM_DATA_DIR" "$SUBMISSIONS_DIR"
+mkdir -p "$RAW_DATA_DIR" "$PROCESSED_DATA_DIR" "$PROCESSED_DATA_DIR" "$SUBMISSIONS_DIR"
 
 # Download data from Kaggle
-ZIP_FILE="$RAW_DATA_DIR/competition_data.zip"
+ZIP_FILE="$RAW_DATA_DIR/$COMPETITION_NAME.zip"
 echo "Downloading data from Kaggle..."
 kaggle competitions download -c "$COMPETITION_NAME" -p "$RAW_DATA_DIR"
 
@@ -55,7 +54,7 @@ echo "Organizing files..."
 if [[ -d "$RAW_DATA_DIR/train" && -d "$RAW_DATA_DIR/test" && -f "$RAW_DATA_DIR/sample_submission.csv" ]]; then
     echo "Moving files to their respective locations..."
     mv "$RAW_DATA_DIR/train" "$PROCESSED_DATA_DIR/train"
-    mv "$RAW_DATA_DIR/test" "$INTERIM_DATA_DIR/test"
+    mv "$RAW_DATA_DIR/test" "$PROCESSED_DATA_DIR/test"
     mv "$RAW_DATA_DIR/sample_submission.csv" "$SUBMISSIONS_DIR/sample_submission.csv"
 else
     echo "Error: Unexpected structure in the zip file. Please check its contents."

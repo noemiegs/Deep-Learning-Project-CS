@@ -50,5 +50,5 @@ This script will:
 - Unzip and organize the data into the project’s folder structure:
   - `data/raw/`: Contains raw downloaded files.
   - `data/processed/train/`: Training data.
-  - `data/interim/test/`: Test data.
+  - `data/processed/test/`: Test data.
   - `submissions/sample_submission.csv`: Sample submission file.
