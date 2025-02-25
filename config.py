@@ -1,2 +1,3 @@
 # Chemin de base pour ExperimentRuns
-BASE_DIR = "data/raw/train/static/ExperimentRuns"
+DATA_DIR = "data/raw/train/static/ExperimentRuns"
+TARGET_DIR = "data/raw/train/overlay/ExperimentRuns"
