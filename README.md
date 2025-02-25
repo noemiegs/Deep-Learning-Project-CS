@@ -46,6 +46,7 @@ bash scripts/setup_data.sh
 ```
 
 This script will:
+
 - Download the competition data from Kaggle.
 - Unzip and organize the data into the project’s folder structure:
   - `data/raw/`: Contains raw downloaded files.
