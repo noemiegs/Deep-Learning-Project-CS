@@ -57,5 +57,5 @@ evaluation_output/
 data
 submissions
 .venv
-test*
+# test*
 kaggle.json
