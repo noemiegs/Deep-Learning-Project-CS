@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from config import VOXEL_SIZES, PARTICLE_COLORS
+from config import VOXEL_SIZES, PARTICLE_COLORS, DEFAULT_COLOR
+from src.preprocessing import generate_mask
+
 
 def display_tomogram_slice(all_data, tomogram_folder, slice_index, all_targets=None, resolution=None, threshold=30):
     """
@@ -62,4 +64,69 @@ def display_tomogram_slice(all_data, tomogram_folder, slice_index, all_targets=N
         fig.legend(legend_entries.values(), legend_entries.keys(), loc='upper right')
 
     plt.suptitle(f"Tomogramme {tomogram_folder} - Coupe Z={slice_index}")
+    plt.show()
+
+def display_tomogram_and_target(tomogram, resolution_group, slice_index, sphere_radius=2):
+    """
+    Affiche côte à côte la coupe du tomogramme et le masque target associé.
+    """
+    voxel_size = VOXEL_SIZES.get(str(resolution_group))
+    # Charger le volume et extraire la coupe
+    tomogram_folder = tomogram['name']
+    volume = tomogram['images'][int(resolution_group)]
+    targets = tomogram['targets']
+    image_slice = volume[slice_index, :, :]
+    
+    # Générer le masque complet à partir des targets
+    mask_full = generate_mask(tomogram, resolution_group, sphere_radius=sphere_radius)
+    target_slice = mask_full[slice_index, :, :]
+
+    # Création de la figure avec deux sous-graphes
+    fig, axs = plt.subplots(1, 2, figsize=(16, 8))
+
+    # Palette de couleurs fixe pour chaque molécule
+    colors = PARTICLE_COLORS
+    
+    # --- Affichage de la coupe du tomogramme avec les targets ---
+    axs[0].imshow(image_slice, cmap='gray')
+    axs[0].set_title(f"Tomogramme {tomogram_folder} - Slice Z={slice_index}")
+
+    legend_entries = {}
+
+    for molecule, points in targets.items():
+        color = colors.get(molecule, DEFAULT_COLOR)  # Assurer une couleur par défaut si inconnue
+        for point in points:
+            x = point["location"]["x"] / voxel_size
+            y = point["location"]["y"] / voxel_size
+            z = point["location"]["z"] / voxel_size
+            if abs(z - slice_index) < 1:
+                sc = axs[0].scatter(x, y, s=50, edgecolors=color, facecolors='none', linewidths=1.5)
+                if molecule not in legend_entries:
+                    legend_entries[molecule] = sc
+
+    if legend_entries:
+        axs[0].legend(legend_entries.values(), legend_entries.keys(), loc='upper right')
+    axs[0].axis('off')
+
+    # --- Affichage du masque généré ---
+    axs[1].imshow(target_slice, cmap='jet')
+    axs[1].set_title(f"Masque Target {tomogram_folder} - Slice Z={slice_index}")
+
+    legend_entries_mask = {}
+    for molecule, points in targets.items():
+        color = colors.get(molecule, "yellow")
+        for point in points:
+            x = point["location"]["x"] / voxel_size
+            y = point["location"]["y"] / voxel_size
+            z = point["location"]["z"] / voxel_size
+            if abs(z - slice_index) < 1:
+                sc = axs[1].scatter(x, y, s=20, edgecolors=color, facecolors='none', linewidths=1.5)
+                if molecule not in legend_entries_mask:
+                    legend_entries_mask[molecule] = sc
+
+    if legend_entries_mask:
+        axs[1].legend(legend_entries_mask.values(), legend_entries_mask.keys(), loc='upper right')
+    axs[1].axis('off')
+
+    plt.tight_layout()
     plt.show()

@@ -17,3 +17,14 @@ PARTICLE_COLORS = {
     "virus-like-particle": "cyan",
     "beta-galactosidase": "green"
 }
+DEFAULT_COLOR = "red"
+
+CLASS_MAPPING = {
+    "background": 0,
+    "apo-ferritin": 1,
+    "beta-amylase": 2,
+    "ribosome": 3,
+    "thyroglobulin": 4,
+    "virus-like-particle": 5,
+    "beta-galactosidase": 6
+}
