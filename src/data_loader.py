@@ -83,3 +83,8 @@ def load_targets(base_path):
                 target_data[tomogram_folder][molecule_name] = points
 
     return target_data
+
+def get_tomogram_from_dataset(dataset, tomogram_folder):
+    for tomogram in dataset:
+        if tomogram['name'] == tomogram_folder:
+            return tomogram

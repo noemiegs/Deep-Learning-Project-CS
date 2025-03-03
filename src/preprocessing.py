@@ -3,6 +3,7 @@ import json
 import zarr
 import numpy as np
 from config import VOXEL_SIZES, PARTICLE_COLORS, CLASS_MAPPING
+from tensorflow.keras.utils import to_categorical
 
 
 def prepare_dataset(image_path, target_path):
@@ -91,8 +92,8 @@ def generate_mask(tomogram, resolution, sphere_radius=2):
     volume_shape = tomogram['images'][int(resolution)].shape
     targets = tomogram['targets']
     voxel_size = VOXEL_SIZES.get(resolution)
-    print(f"Voxel size: {voxel_size}")
     mask = np.zeros(volume_shape, dtype=np.uint8)  # Fond = 0
+
     for molecule, points in targets.items():
         if molecule not in class_mapping:
             continue
@@ -166,3 +167,70 @@ def extract_grid_patches(tomogram, mask, resolution, num_cubes_axis=None):
                 patches_mask.append(patch_mask)
     
     return patches_img, patches_mask
+
+def generate_training_data(dataset, resolution='2', num_cubes_axis=8):
+    """
+    Génère les données d'entraînement à partir du dataset en divisant chaque tomogramme en patchs.
+    
+    Args:
+        dataset (list): Liste des tomogrammes.
+        resolution (str): Résolution du tomogramme.
+        num_cubes_axis (int): Nombre de cubes par axe (détermine la taille des patchs).
+        
+    Returns:
+        X_train (numpy array): Les images des patchs.
+        Y_train_int (numpy array): Les masques des patchs.
+    """
+    X_train_list = []
+    Y_train_list = []
+    
+    for tomogram in dataset:
+        # print(f"Traitement de {tomogram['name']} - Cibles : {tomogram['targets']}")
+        mask_full = generate_mask(tomogram, resolution, sphere_radius=2)
+        # print(f"Volume: {tomogram['images'][int(resolution)].shape} - Masque: {mask_full.shape}")
+        
+        patches_img, patches_mask = extract_grid_patches(tomogram, mask_full, resolution, num_cubes_axis=num_cubes_axis)
+        
+        for patch_img, patch_mask in zip(patches_img, patches_mask):
+            patch_img = patch_img[..., np.newaxis]  # Ajouter la dimension de canal
+            X_train_list.append(patch_img)
+            Y_train_list.append(patch_mask)
+
+    X_train = np.array(X_train_list, dtype=np.float32)
+    Y_train_int = np.array(Y_train_list, dtype=np.uint8)
+    Y_train = to_categorical(Y_train_int, num_classes=len(CLASS_MAPPING))
+    
+    return X_train, Y_train, Y_train_int
+
+def balance_dataset(X_train, Y_train_int, num_classes=7):
+    """
+    Équilibre le dataset en sélectionnant aléatoirement les patchs sans protéines pour avoir un équilibre 50/50.
+    
+    Args:
+        X_train (numpy array): Les images des patchs.
+        Y_train_int (numpy array): Les masques des patchs.
+        num_classes (int): Nombre de classes dans les masques.
+        
+    Returns:
+        X_train_balanced (numpy array): Les images des patchs équilibrés.
+        Y_train_balanced (numpy array): Les masques des patchs équilibrés en one-hot.
+    """
+    patch_contains_protein = (Y_train_int > 0).any(axis=(1, 2, 3))
+    
+    indices_with_protein = np.where(patch_contains_protein)[0]
+    indices_without_protein = np.where(~patch_contains_protein)[0]
+    
+    num_with_protein = len(indices_with_protein)
+    num_without_protein_needed = num_with_protein  # Pour équilibrer à 50/50
+    
+    indices_without_protein_sampled = np.random.choice(indices_without_protein, num_without_protein_needed)
+    balanced_indices = np.concatenate([indices_with_protein, indices_without_protein_sampled])
+    
+    np.random.shuffle(balanced_indices)
+    
+    X_train_balanced = X_train[balanced_indices]
+    Y_train_int_balanced = Y_train_int[balanced_indices]
+    
+    Y_train_balanced = to_categorical(Y_train_int_balanced, num_classes=num_classes)
+    
+    return X_train_balanced, Y_train_balanced, Y_train_int_balanced

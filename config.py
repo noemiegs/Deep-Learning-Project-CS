@@ -3,6 +3,8 @@ DATA_DIR = "data/raw/train/static/ExperimentRuns"
 TARGET_DIR = "data/raw/train/overlay/ExperimentRuns"
 SRC_DIR = "src"
 
+USE_AUGMENTATION = False
+
 VOXEL_SIZES = {
     '0': 10,  # Pleine résolution
     '1': 20,  # Résolution intermédiaire
@@ -27,4 +29,14 @@ CLASS_MAPPING = {
     "thyroglobulin": 4,
     "virus-like-particle": 5,
     "beta-galactosidase": 6
+}
+
+PARTICLE_WEIGHTS = {
+    'background': 1,
+    'apo-ferritin': 1,
+    'beta-amylase': 1,
+    'beta-galactosidase': 1,
+    'ribosome': 1,
+    'thyroglobulin': 1,
+    'virus-like-particle': 1,
 }
