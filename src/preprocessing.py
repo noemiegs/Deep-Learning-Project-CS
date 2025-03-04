@@ -127,79 +127,96 @@ def generate_mask(tomogram, resolution, sphere_radius=2):
     return mask
 
 
-def extract_grid_patches(tomogram, mask, resolution, num_cubes_axis=None):
+def extract_cubic_patches(tomogram, resolution, mask, dim_in):
     """
-    Extrait tous les patches qui couvrent entièrement le volume en divisant chaque dimension en num_cubes_axis segments.
-    On suppose que le volume est exactement divisible par num_cubes_axis sur chaque axe.
-    
+    Extrait des patches cubiques de taille (dim_in, dim_in, dim_in) à partir du volume.
+    Si la dimension finale dépasse la taille du volume, le patch est complété par du padding.
+
     Args:
-        volume (ndarray): Volume 3D d'entrée, de forme (Z, Y, X).
-        mask (ndarray): Masque associé, de même forme.
-        num_cubes_axis (int): Nombre de segments (patchs) par axe (exemple : 4 donnera 4x4x4 = 64 patches).
-        
+        tomogram (dict): Dictionnaire contenant l'image et le masque.
+        mask (ndarray): Masque associé.
+        dim_in (int): Taille des patches (cubiques).
+
     Returns:
-        tuple: (patches_img, patches_mask) 
-               - patches_img : liste de patches d'image.
-               - patches_mask : liste de patches de masque.
+        tuple: (patches_img, patches_mask)
+               - patches_img : liste de patches image.
+               - patches_mask : liste de patches masque.
     """
-    if num_cubes_axis is None:
-        # based on the resolution, we can set the number of cubes
-        num_resolutions = len(tomogram['images'])
-        num_cubes_axis = 2**int(num_resolutions-resolution)
     volume = tomogram['images'][int(resolution)]
     z_dim, y_dim, x_dim = volume.shape
-    patch_size_z = z_dim // num_cubes_axis
-    patch_size_y = y_dim // num_cubes_axis
-    patch_size_x = x_dim // num_cubes_axis
     
     patches_img = []
     patches_mask = []
-    
-    for i in range(num_cubes_axis):
-        for j in range(num_cubes_axis):
-            for k in range(num_cubes_axis):
-                z0 = i * patch_size_z
-                y0 = j * patch_size_y
-                x0 = k * patch_size_x
-                patch_img = volume[z0:z0+patch_size_z, y0:y0+patch_size_y, x0:x0+patch_size_x]
-                patch_mask = mask[z0:z0+patch_size_z, y0:y0+patch_size_y, x0:x0+patch_size_x]
+
+    # Calcul des indices de départ pour chaque axe
+    z_steps = list(range(0, z_dim, dim_in))
+    y_steps = list(range(0, y_dim, dim_in))
+    x_steps = list(range(0, x_dim, dim_in))
+
+    # Assurez-vous de couvrir toute la zone avec padding si nécessaire
+    if z_dim % dim_in != 0:
+        z_steps.append(z_dim - dim_in)
+    if y_dim % dim_in != 0:
+        y_steps.append(y_dim - dim_in)
+    if x_dim % dim_in != 0:
+        x_steps.append(x_dim - dim_in)
+
+    # Extraction des patches
+    for z0 in z_steps:
+        for y0 in y_steps:
+            for x0 in x_steps:
+                patch_img = volume[z0:min(z0 + dim_in, z_dim),
+                                   y0:min(y0 + dim_in, y_dim),
+                                   x0:min(x0 + dim_in, x_dim)]
+                
+                patch_mask = mask[z0:min(z0 + dim_in, z_dim),
+                                  y0:min(y0 + dim_in, y_dim),
+                                  x0:min(x0 + dim_in, x_dim)]
+
+                # Padding si la taille est inférieure à dim_in
+                pad_z = dim_in - patch_img.shape[0]
+                pad_y = dim_in - patch_img.shape[1]
+                pad_x = dim_in - patch_img.shape[2]
+
+                if pad_z > 0 or pad_y > 0 or pad_x > 0:
+                    patch_img = np.pad(patch_img, ((0, pad_z), (0, pad_y), (0, pad_x)), mode='constant', constant_values=0)
+                    patch_mask = np.pad(patch_mask, ((0, pad_z), (0, pad_y), (0, pad_x)), mode='constant', constant_values=0)
+
                 patches_img.append(patch_img)
                 patches_mask.append(patch_mask)
-    
+
     return patches_img, patches_mask
 
-def generate_training_data(dataset, resolution='2', num_cubes_axis=8):
+
+def generate_training_data(dataset, resolution='2', dim_in=64):
     """
-    Génère les données d'entraînement à partir du dataset en divisant chaque tomogramme en patchs.
-    
+    Génère les données d'entraînement avec des patches cubiques.
+
     Args:
         dataset (list): Liste des tomogrammes.
         resolution (str): Résolution du tomogramme.
-        num_cubes_axis (int): Nombre de cubes par axe (détermine la taille des patchs).
-        
+        dim_in (int): Taille des patches cubiques.
+
     Returns:
-        X_train (numpy array): Les images des patchs.
-        Y_train_int (numpy array): Les masques des patchs.
+        X_train (numpy array): Les images des patches.
+        Y_train (numpy array): Les masques des patches.
     """
     X_train_list = []
     Y_train_list = []
-    
+
     for tomogram in dataset:
-        # print(f"Traitement de {tomogram['name']} - Cibles : {tomogram['targets']}")
-        mask_full = generate_mask(tomogram, resolution, sphere_radius=2)
-        # print(f"Volume: {tomogram['images'][int(resolution)].shape} - Masque: {mask_full.shape}")
-        
-        patches_img, patches_mask = extract_grid_patches(tomogram, mask_full, resolution, num_cubes_axis=num_cubes_axis)
-        
-        for patch_img, patch_mask in zip(patches_img, patches_mask):
-            patch_img = patch_img[..., np.newaxis]  # Ajouter la dimension de canal
-            X_train_list.append(patch_img)
-            Y_train_list.append(patch_mask)
+        mask = generate_mask(tomogram, resolution, sphere_radius=2)
+        patches_img, patches_mask = extract_cubic_patches(tomogram, mask, dim_in=dim_in)
+
+        for img, mask in zip(patches_img, patches_mask):
+            img = img[..., np.newaxis].astype(np.float32)
+            X_train_list.append(img)
+            Y_train_list.append(mask)
 
     X_train = np.array(X_train_list, dtype=np.float32)
     Y_train_int = np.array(Y_train_list, dtype=np.uint8)
     Y_train = to_categorical(Y_train_int, num_classes=len(CLASS_MAPPING))
-    
+
     return X_train, Y_train, Y_train_int
 
 def balance_dataset(X_train, Y_train_int, num_classes=7):
