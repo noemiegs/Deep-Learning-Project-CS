@@ -1,22 +1,23 @@
 import tensorflow as tf
 import numpy as np
 from config import CLASS_MAPPING
-from src.preprocessing import generate_mask, extract_grid_patches
+from src.preprocessing import generate_mask, extract_cubic_patches
 from tensorflow.keras.utils import to_categorical
 
 class TomogramDataLoader:
-    def __init__(self, dataset, resolution='2', num_cubes_axis=8, sphere_radius=2, augment=False):
+    def __init__(self, dataset, resolution='2', dim_in= 64, sphere_radius=2, augment=False):
         self.dataset = dataset
         self.resolution = resolution
-        self.num_cubes_axis = num_cubes_axis
         self.sphere_radius = sphere_radius
         self.augment = augment
+        self.dim_in = dim_in
 
     def generate_patch(self, tomogram):
         mask = generate_mask(tomogram, self.resolution, self.sphere_radius)
-        patches_img, patches_mask = extract_grid_patches(tomogram, mask, self.resolution, self.num_cubes_axis)
+        patches_img, patches_mask = extract_cubic_patches(tomogram, self.resolution, mask, dim_in=self.dim_in)
+        
         for img, mask in zip(patches_img, patches_mask):
-            img = img[..., np.newaxis].astype(np.float32)
+            img = img[..., np.newaxis].astype(np.float32)  # Ajouter la dimension canal
             mask = to_categorical(mask, num_classes=len(CLASS_MAPPING)).astype(np.uint8)
             yield img, mask
 
